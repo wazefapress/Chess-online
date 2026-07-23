@@ -1,16 +1,25 @@
 {
-  "name": "chess-online-server",
-  "version": "1.0.0",
-  "description": "Chess Game WebSocket Server",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "socket.io": "^4.7.5"
-  },
-  "engines": {
-    "node": ">=18.x"
-  }
+"name": "chess-online-server",
+"version": "1.0.0",
+"description": "Authoritative Server for UNO Online",
+"main": "server.js",
+"scripts": {
+"start": "node server.js"
+},
+"dependencies": {
+"express": "^4.22.2",
+"socket.io": "^4.8.3"
+},
+"repository": {
+"type": "git",
+"url": "git+https://github.com/wazefapress/chess-online.git"
+},
+"keywords": [],
+"author": "",
+"license": "ISC",
+"type": "commonjs",
+"bugs": {
+"url": "https://github.com/wazefapress/chess-online/issues"
+},
+"homepage": "https://github.com/wazefapress/chess-online#readme"
 }
