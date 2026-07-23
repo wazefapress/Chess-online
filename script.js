@@ -6,7 +6,7 @@ var timeLeftWhite = 300;
 var timeLeftBlack = 300;
 var gameMode = 'computer'; 
 var roomCode = null;
-const socket = io('https://chess-online-0crv.onrender.com');
+const socket = io('https://uno-online-1.onrender.com');
 // تعريف مؤثر صوت التحريك باستخدام رابط مباشر وصريح لملف صوتي صالح
 const moveSound = new Howl({ 
     src: ['move.mp3'],
