@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="استمتع بلعبة الشطرنج التفاعلية والمطورة بأحدث التقنيات. العب ضد الكمبيوتر أو مع أصدقائك مع وتصميم متجاوب. برمجة وتطوير هيثم زيدان.">
+<meta name="keywords" content="لعبة شطرنج, العاب ورق, Chess, العاب ذكاء, العاب اونلاين, هيثم زيدان, العاب متصفح, العاب تفاعلية, برمجة العاب, لعب جماعي">
+<meta name="author" content="هيثم زيدان">
+<meta name="robots" content="index, follow">
+
+<link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/8636/8636904.png">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8636/8636904.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+<meta name="theme-color" content="#0f172a">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="لعبة Chessالاحترافية المتعددة - العب الآن!">
+<meta property="og:description" content="تحداني في لعبة Chess التفاعلية أونلاين! تصميم وتطوير هيثم زيدان.">
+<meta property="og:image" content="chess.png">
+<meta property="og:url" content="https://www.patreon.com/haythamzeidan">
+
+    <title>شطرنج المحترفين</title>
+    <!-- مكتبات التصميم والألعاب -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+ <link rel="stylesheet" href="style.css?v=2.0">
+</head>
+<body>
+    <!-- الشاشة الرئيسية -->
+    <div id="start-screen" class="overlay">
+        <div class="card animate__animated animate__fadeInDown">
+            <h1>شطرنج المحترفين</h1>
+            <p>اختر نمط اللعب للبدء</p>
+            <div class="menu-buttons">
+                <button id="vs-computer-btn" class="primary-btn">لعب ضد الكمبيوتر</button>
+                <button id="online-btn" class="secondary-btn">لعب أونلاين (إنشاء غرفة)</button>
+                <button id="join-btn" class="secondary-btn">انضمام بواسطة كود</button>
+                <button id="rules-btn" class="accent-btn">قوانين اللعبة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إدخال كود الغرفة -->
+    <div id="join-modal" class="overlay" style="display: none;">
+        <div class="card animate__animated animate__zoomIn">
+            <h2>انضمام إلى غرفة</h2>
+            <input type="text" id="room-code-input" placeholder="أدخل كود الغرفة هنا...">
+            <div class="modal-actions" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button id="connect-room-btn" class="primary-btn">اتصال</button>
+                <button id="close-join-btn" class="danger-btn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة القوانين والتعريف -->
+    <div id="rules-modal" class="overlay" style="display: none;">
+        <div class="card rules-card animate__animated animate__fadeIn">
+            <h2>قوانين وتعريف اللعبة</h2>
+            <div class="rules-content">
+                <p><strong>الشطرنج:</strong> لعبة استراتيجية تلعب على رقعة مربعة الشكل مكونة من 64 مربعاً.</p>
+                <p><strong>الهدف:</strong> محاصرة ملك الخصم وضعّه في وضعية "كش مات" (Checkmate).</p>
+                <p><strong>الحركة:</strong> تتحرك كل قطعة بطريقة هندسية خاصة بها (فالحصان على شكل حرف L، والفيل بشكل مائل، وهكذا).</p>
+            </div>
+            <button id="close-rules-btn" class="primary-btn">عودة</button>
+        </div>
+    </div>
+
+    <!-- واجهة اللعب الرئيسية -->
+    <main id="game-container" style="display: none;">
+        <div class="game-header">
+            <!-- شريط كود الغرفة المحدث مع زر النسخ المدمج بجانبه -->
+            <div id="room-display" class="room-badge" style="display: none;">
+                <span>كود الغرفة: <strong id="current-room-code" style="color: #f1c40f; letter-spacing: 1px;"></strong></span>
+                <button id="copy-room-code-btn" class="copy-inline-btn">📋 نسخ الكود</button>
+            </div>
+            <button id="leave-room-btn" class="danger-btn small-btn">إنهاء / خروج</button>
+        </div>
+        <div class="timers">
+            <div id="timer-white" class="timer">الأبيض: 05:00</div>
+            <div id="timer-black" class="timer">الأسود: 05:00</div>
+        </div>
+        <div id="chessboard"></div>
+        <div class="controls">
+            <button id="share-btn" class="secondary-btn">مشاركة اللعبة</button>
+              <footer>
+    
+<p>تصميم و تطوير: هيثم زيدان</p>
+
+          <p>
+                    <a href="https://www.patreon.com/haythamzeidan" target="_blank" aria-label="Patreon" style="text-decoration: none; color: #FF424D; font-size: 18px;">
+                        <i class="fa-brands fa-patreon"></i> ادعمني على Patreon
+                    </a>
+                </p>
+    </footer>
+        </div>
+    </main>
+    <!-- 📱 شاشة إجبار الوضع العمودي عند تدوير الهاتف -->
+    <div id="rotate-warning">
+        <div class="rotate-content">
+            <i class="fa-solid fa-mobile-screen-button rotate-icon"></i>
+            <p>يرجى تدوير الهاتف إلى الوضع العمودي لمتابعة اللعب 📱</p>
+        </div>
+    </div>
+  
+
+    <!-- المكتبات البرمجية -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
