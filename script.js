@@ -1,5 +1,5 @@
 // استبدل الرابط أدناه برابط السيرفر الحقيقي الخاص بك على Render
-//const socket = io('https://chess-online-kjxi.onrender.com');
+//const socket = io('https://chess-online-0crv.onrender.com');
 var board = null;
 var game = new Chess();
 var timerInterval;
