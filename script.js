@@ -129,7 +129,8 @@ var config = {
     position: 'start',
     onDragStart: onDragStart,
     onDrop: onDrop,
-    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png' // سنستبدله بالسطر أدناه
+    
 };
 
 function startGame() {

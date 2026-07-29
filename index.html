@@ -10,21 +10,20 @@
 
 <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/8636/8636904.png">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8636/8636904.png">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
 <meta name="theme-color" content="#0f172a">
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="لعبة Chessالاحترافية المتعددة - العب الآن!">
 <meta property="og:description" content="تحداني في لعبة Chess التفاعلية أونلاين! تصميم وتطوير هيثم زيدان.">
 <meta property="og:image" content="chess.png">
-<meta property="og:url" content="https://www.patreon.com/haythamzeidan">
+<meta property="og:url" content="https://chess.haythamzeidan.workers.dev">
 
     <title>شطرنج المحترفين</title>
     <!-- مكتبات التصميم والألعاب -->
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <link rel="stylesheet" href="style.css?v=2.0">
+ <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- الشاشة الرئيسية -->
@@ -104,17 +103,16 @@
     </div>
   
 
- <!-- 1. مكتبة jQuery الأساسية -->
+<!-- 1. مكتبة jQuery أولاً وأخيراً قبل أي مكتبة تعتمد عليها -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- 2. مكتبات الشطرنج و Socket.io والصوت -->
+<!-- 2. مكتبات الشطرنج والصوت والشبكة -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-<script src="https://chessboardjs.com/js/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-<!-- 3. ملف السكريبت الخاص بك يأتي في النهاية -->
+<!-- 3. ملف منطق اللعبة -->
 <script src="script.js"></script>
-
 </body>
 </html>
