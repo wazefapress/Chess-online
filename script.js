@@ -2,7 +2,7 @@
 let socket = null;
 function initSocket() {
     if (!socket) {
-        socket = io('https://chess-online-0t7v.onrender.com', {
+      //  socket = io('https://chess-online-0t7v.onrender.com', {
             reconnectionAttempts: 3,
             timeout: 5000
         });
