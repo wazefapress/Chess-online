@@ -1,11 +1,11 @@
 // عدم الاتصال التلقائي المباشر لمنع تجميد الصفحة، والاتصال عند الحاجة
-let socket = null;
-function initSocket() {
-    if (!socket) {
+//let socket = null;
+//function initSocket() {
+  //  if (!socket) {
       //  socket = io('https://chess-online-0t7v.onrender.com', {
-            reconnectionAttempts: 3,
-            timeout: 5000
-        });
+        //   reconnectionAttempts: 3,
+        //  timeout: 5000
+    //    });
 
         // ربط أحداث السيرفر هنا لتجنب تكرارها
         socket.on('player-assigned', function(color) {
