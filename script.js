@@ -7,6 +7,7 @@ var timeLeftWhite = 300;
 var timeLeftBlack = 300;
 var gameMode = 'computer'; 
 var roomCode = null;
+var playerColor = 'w'; // لون اللاعب الافتراضي
 
 // تعريف مؤثر صوت التحريك باستخدام رابط مباشر وصريح لملف صوتي صالح
 const moveSound = new Howl({ 
@@ -68,6 +69,21 @@ function makeComputerMove() {
     }
 }
 
+// دالة التحقق من أحقية الحركة
+function onDragStart(source, piece, position, orientation) {
+    if (game.game_over()) return false;
+    
+    if (gameMode === 'online') {
+        // منع اللاعب من اللعب في غير دوره أو تحريك قطع الخصم
+        if (game.turn() !== playerColor || piece.search(new RegExp(`^${playerColor}`)) === -1) {
+            return false;
+        }
+    } else {
+        // في وضع الكمبيوتر، اللاعب دائماً أبيض
+        if (game.turn() === 'b' && piece.search(/^w/) === -1) return false;
+    }
+}
+
 function onDrop(source, target) {
     var move = game.move({ from: source, to: target, promotion: 'q' });
     if (move === null) return 'snapback';
@@ -77,14 +93,20 @@ function onDrop(source, target) {
 
     if (game.in_checkmate()) {
         handleGameOver(game.turn() === 'w' ? 'الأسود' : 'الأبيض');
-    } else if (gameMode === 'computer') {
-        setTimeout(makeComputerMove, 250);
+    } else {
+        if (gameMode === 'online') {
+            // إرسال الحركة للسيرفر
+            socket.emit('make-move', { roomCode: roomCode, move: move });
+        } else if (gameMode === 'computer') {
+            setTimeout(makeComputerMove, 250);
+        }
     }
 }
 
 var config = {
     draggable: true,
     position: 'start',
+    onDragStart: onDragStart,
     onDrop: onDrop,
     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
 };
@@ -92,14 +114,32 @@ var config = {
 function startGame() {
     game.reset();
     $('#start-screen').hide();
-    $('#game-container').show();
+    
+    // إزالة أي رسائل انتظار سابقة
+    $('#waiting-message').remove();
+    
+    // عرض حاوية اللعبة بتنسيق عمودي صريح
+    $('#game-container').css({
+        'display': 'flex',
+        'flex-direction': 'column',
+        'align-items': 'center',
+        'justify-content': 'center'
+    }).show();
     
     if (!board) {
         board = Chessboard('chessboard', config);
     } else {
         board.start();
-        board.resize();
     }
+
+    // قلب الرقعة عمودياً لتناسب واجهة المستخدم بناءً على لونه
+    if (gameMode === 'online') {
+        board.orientation(playerColor === 'b' ? 'black' : 'white');
+    } else {
+        board.orientation('white');
+    }
+    
+    board.resize();
     
     timeLeftWhite = 300;
     timeLeftBlack = 300;
@@ -108,7 +148,41 @@ function startGame() {
     startTimer();
 }
 
-// تفعيل الأحداث بعد تحميل عناصر الصفحة بالكامل
+// ===================================
+// === أحداث السيرفر (Socket.io) ===
+// ===================================
+
+socket.on('player-assigned', function(color) {
+    playerColor = color;
+});
+
+socket.on('start-game', function() {
+    startGame();
+});
+
+socket.on('opponent-move', function(move) {
+    game.move(move);
+    board.position(game.fen());
+    moveSound.play();
+    if (game.in_checkmate()) {
+        handleGameOver(game.turn() === 'w' ? 'الأسود' : 'الأبيض');
+    }
+});
+
+socket.on('room-full', function() {
+    alert('عذراً، الغرفة ممتلئة.');
+    $('#waiting-message').text('الغرفة ممتلئة. يرجى المحاولة مرة أخرى.');
+});
+
+socket.on('opponent-disconnected', function() {
+    alert('انسحب الخصم! لقد فزت.');
+    clearInterval(timerInterval);
+});
+
+// ===================================
+// === أحداث الواجهة (UI Events) ===
+// ===================================
+
 $(document).ready(function() {
     $('#vs-computer-btn').on('click', function() {
         gameMode = 'computer';
@@ -121,7 +195,20 @@ $(document).ready(function() {
         roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         $('#current-room-code').text(roomCode);
         $('#room-display').show();
-        startGame();
+        
+        socket.emit('join-room', roomCode);
+        
+        $('#start-screen').hide();
+        
+        $('#game-container').css({
+            'display': 'flex',
+            'flex-direction': 'column',
+            'align-items': 'center'
+        }).show().append('<h3 id="waiting-message" style="margin-top: 20px;">في انتظار انضمام الخصم...</h3>');
+        
+        // إخفاء الرقعة مؤقتاً حتى تكتمل الغرفة
+        $('#chessboard').hide();
+        $('.timers').hide();
     });
 
     $('#join-btn').on('click', function() {
@@ -140,7 +227,18 @@ $(document).ready(function() {
             $('#current-room-code').text(roomCode);
             $('#room-display').show();
             $('#join-modal').hide();
-            startGame();
+            
+            socket.emit('join-room', roomCode);
+            
+            $('#start-screen').hide();
+            $('#game-container').css({
+                'display': 'flex',
+                'flex-direction': 'column',
+                'align-items': 'center'
+            }).show().append('<h3 id="waiting-message" style="margin-top: 20px;">جاري الاتصال بالغرفة...</h3>');
+            
+            $('#chessboard').hide();
+            $('.timers').hide();
         } else {
             alert('الرجاء إدخال كود غرفة صحيح.');
         }
@@ -174,7 +272,15 @@ $(document).ready(function() {
 
     $('#leave-room-btn').on('click', function() {
         clearInterval(timerInterval);
+        
+        // فصل الاتصال الحالي وإنشاء جلسة جديدة لتنظيف الغرفة السابقة
+        socket.disconnect(); 
+        setTimeout(() => socket.connect(), 500); 
+        
+        $('#waiting-message').remove();
         $('#game-container').hide();
+        $('#chessboard').show(); // إعادة الإظهار للعب لاحقاً
+        $('.timers').show();
         $('#start-screen').show();
     });
 
@@ -190,4 +296,3 @@ $(document).ready(function() {
 $(window).resize(function() {
     if (board) board.resize();
 });
-
