@@ -1,5 +1,42 @@
-// استبدل الرابط أدناه برابط السيرفر الحقيقي الخاص بك على Render
-const socket = io('https://chess-online-0t7v.onrender.com');
+// عدم الاتصال التلقائي المباشر لمنع تجميد الصفحة، والاتصال عند الحاجة
+let socket = null;
+function initSocket() {
+    if (!socket) {
+        socket = io('https://chess-online-0t7v.onrender.com', {
+            reconnectionAttempts: 3,
+            timeout: 5000
+        });
+
+        // ربط أحداث السيرفر هنا لتجنب تكرارها
+        socket.on('player-assigned', function(color) {
+            playerColor = color;
+        });
+
+        socket.on('start-game', function() {
+            startGame();
+        });
+
+        socket.on('opponent-move', function(move) {
+            game.move(move);
+            board.position(game.fen());
+            moveSound.play();
+            if (game.in_checkmate()) {
+                handleGameOver(game.turn() === 'w' ? 'الأسود' : 'الأبيض');
+            }
+        });
+
+        socket.on('room-full', function() {
+            alert('عذراً، الغرفة ممتلئة.');
+            $('#waiting-message').text('الغرفة ممتلئة. يرجى المحاولة مرة أخرى.');
+        });
+
+        socket.on('opponent-disconnected', function() {
+            alert('انسحب الخصم! لقد فزت.');
+            clearInterval(timerInterval);
+        });
+    }
+}
+
 var board = null;
 var game = new Chess();
 var timerInterval;
@@ -7,17 +44,10 @@ var timeLeftWhite = 300;
 var timeLeftBlack = 300;
 var gameMode = 'computer'; 
 var roomCode = null;
+var playerColor = 'w';
 
-// تعريف مؤثر صوت التحريك باستخدام رابط مباشر وصريح لملف صوتي صالح
-const moveSound = new Howl({ 
-    src: ['move.mp3'],
-    html5: true
-});
-
-const winSound = new Howl({ 
-    src: ['game-end.wav'],
-    html5: true
-});
+const moveSound = new Howl({ src: ['move.mp3'], html5: true });
+const winSound = new Howl({ src: ['game-end.wav'], html5: true });
 
 function updateTimerDisplay(id, time) {
     let mins = Math.floor(time / 60);
@@ -59,12 +89,21 @@ function makeComputerMove() {
     var randomIdx = Math.floor(Math.random() * possibleMoves.length);
     game.move(possibleMoves[randomIdx]);
     board.position(game.fen());
-    
-    // تشغيل صوت الحركة عند تحرك الكمبيوتر
     moveSound.play();
     
     if (game.in_checkmate()) {
         handleGameOver(game.turn() === 'w' ? 'الأسود' : 'الأبيض');
+    }
+}
+
+function onDragStart(source, piece, position, orientation) {
+    if (game.game_over()) return false;
+    if (gameMode === 'online') {
+        if (game.turn() !== playerColor || piece.search(new RegExp(`^${playerColor}`)) === -1) {
+            return false;
+        }
+    } else {
+        if (game.turn() === 'b' && piece.search(/^w/) === -1) return false;
     }
 }
 
@@ -72,19 +111,23 @@ function onDrop(source, target) {
     var move = game.move({ from: source, to: target, promotion: 'q' });
     if (move === null) return 'snapback';
     
-    // تشغيل صوت الحركة فور إفلات القطعة في مكانها الصحيح
     moveSound.play();
 
     if (game.in_checkmate()) {
         handleGameOver(game.turn() === 'w' ? 'الأسود' : 'الأبيض');
-    } else if (gameMode === 'computer') {
-        setTimeout(makeComputerMove, 250);
+    } else {
+        if (gameMode === 'online' && socket) {
+            socket.emit('make-move', { roomCode: roomCode, move: move });
+        } else if (gameMode === 'computer') {
+            setTimeout(makeComputerMove, 250);
+        }
     }
 }
 
 var config = {
     draggable: true,
     position: 'start',
+    onDragStart: onDragStart,
     onDrop: onDrop,
     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
 };
@@ -92,14 +135,34 @@ var config = {
 function startGame() {
     game.reset();
     $('#start-screen').hide();
-    $('#game-container').show();
+    $('#waiting-message').remove();
     
-    if (!board) {
-        board = Chessboard('chessboard', config);
-    } else {
-        board.start();
+    $('#game-container').css({
+        'display': 'flex',
+        'flex-direction': 'column',
+        'align-items': 'center',
+        'justify-content': 'center'
+    }).show();
+    
+    $('#chessboard').show();
+    $('.timers').show();
+
+    // تأخير بسيط لضمان قياس المتصفح لأبعاد الرقعة وإظهارها بشكل سليم
+    setTimeout(() => {
+        if (!board) {
+            board = Chessboard('chessboard', config);
+        } else {
+            board.start();
+        }
+
+        if (gameMode === 'online') {
+            board.orientation(playerColor === 'b' ? 'black' : 'white');
+        } else {
+            board.orientation('white');
+        }
+        
         board.resize();
-    }
+    }, 100);
     
     timeLeftWhite = 300;
     timeLeftBlack = 300;
@@ -108,7 +171,7 @@ function startGame() {
     startTimer();
 }
 
-// تفعيل الأحداث بعد تحميل عناصر الصفحة بالكامل
+// أحداث الواجهة
 $(document).ready(function() {
     $('#vs-computer-btn').on('click', function() {
         gameMode = 'computer';
@@ -118,10 +181,23 @@ $(document).ready(function() {
 
     $('#online-btn').on('click', function() {
         gameMode = 'online';
+        initSocket(); // الاتصال فقط عند الحاجة
+        
         roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         $('#current-room-code').text(roomCode);
         $('#room-display').show();
-        startGame();
+        
+        if (socket) socket.emit('join-room', roomCode);
+        
+        $('#start-screen').hide();
+        $('#game-container').css({
+            'display': 'flex',
+            'flex-direction': 'column',
+            'align-items': 'center'
+        }).show().append('<h3 id="waiting-message" style="margin-top: 20px; color: white;">في انتظار انضمام الخصم...</h3>');
+        
+        $('#chessboard').hide();
+        $('.timers').hide();
     });
 
     $('#join-btn').on('click', function() {
@@ -136,11 +212,24 @@ $(document).ready(function() {
         let code = $('#room-code-input').val().trim();
         if (code) {
             gameMode = 'online';
+            initSocket(); // الاتصال فقط عند الحاجة
+            
             roomCode = code;
             $('#current-room-code').text(roomCode);
             $('#room-display').show();
             $('#join-modal').hide();
-            startGame();
+            
+            if (socket) socket.emit('join-room', roomCode);
+            
+            $('#start-screen').hide();
+            $('#game-container').css({
+                'display': 'flex',
+                'flex-direction': 'column',
+                'align-items': 'center'
+            }).show().append('<h3 id="waiting-message" style="margin-top: 20px; color: white;">جاري الاتصال بالغرفة...</h3>');
+            
+            $('#chessboard').hide();
+            $('.timers').hide();
         } else {
             alert('الرجاء إدخال كود غرفة صحيح.');
         }
@@ -174,7 +263,14 @@ $(document).ready(function() {
 
     $('#leave-room-btn').on('click', function() {
         clearInterval(timerInterval);
+        if (socket) {
+            socket.disconnect();
+            socket = null;
+        }
+        $('#waiting-message').remove();
         $('#game-container').hide();
+        $('#chessboard').show();
+        $('.timers').show();
         $('#start-screen').show();
     });
 
@@ -189,5 +285,4 @@ $(document).ready(function() {
 
 $(window).resize(function() {
     if (board) board.resize();
-});
-
+});.
