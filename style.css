@@ -232,3 +232,9 @@ footer a:hover {
         display: flex !important;
     }
 }
+/* تحديد حجم ثابت متجاوب للوحة الشطرنج داخل الحاوية المرنة */
+#chessboard {
+    width: 360px !important;
+    max-width: 90vw !important;
+    margin: 15px auto;
+}
